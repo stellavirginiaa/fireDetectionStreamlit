@@ -3,7 +3,6 @@ import os
 import cv2
 import numpy as np
 import pickle
-from tensorflow.keras.models import load_model
 from skimage.feature import graycomatrix, graycoprops
 import tempfile
 
@@ -31,32 +30,22 @@ def extract_features(image):
     features = np.array(histogram_features + texture_features).reshape(1, -1)
     return features
 
-def predict_new_image(image, rf_model, svm_model, cnn_model):
+def predict_new_image(image, rf_model, svm_model):
     try:
         features = extract_features(image)
-
         rf_pred = rf_model.predict(features)[0]
         svm_pred = svm_model.predict(features)[0]
-
-        resized_image = cv2.resize(image, (128, 128))
-        resized_image = np.expand_dims(resized_image, axis=0)
-
-        cnn_pred = np.argmax(cnn_model.predict(resized_image / 255.0), axis=1)[0]
-
-        return rf_pred, svm_pred, cnn_pred
+        return rf_pred, svm_pred
     except Exception as e:
         st.error(f"Error during prediction: {e}")
-        return None, None, None
+        return None, None
 
 # Load models
 try:
     with open('rf_model.pkl', 'rb') as file:
         rf_model = pickle.load(file)
-
     with open('svm_model.pkl', 'rb') as file:
         svm_model = pickle.load(file)
-
-    cnn_model = load_model('cnn_model.h5')
 except Exception as e:
     st.error(f"Error loading models: {e}")
 
@@ -65,36 +54,30 @@ st.title('Fire Detection App')
 
 st.write("""
 ## Fire Detection Project
-This project focuses on developing an intelligent fire detection system using machine learning algorithms, including SVM, RF, and CNN.
+This project focuses on developing an intelligent fire detection system using machine learning algorithms, including SVM and RF.
 """)
 
 option = st.radio('Select Image Source:', ['Upload', 'Camera'])
 
 if option == 'Upload':
     uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
-
     if uploaded_file is not None:
         with tempfile.NamedTemporaryFile(delete=False) as temp_image:
             temp_image.write(uploaded_file.read())
             temp_image_path = temp_image.name
-
         image = cv2.imread(temp_image_path)
         os.unlink(temp_image_path)
-
         if image is not None:
             st.image(image, caption='Uploaded Image', use_column_width=True)
-            rf_result, svm_result, cnn_result = predict_new_image(image, rf_model, svm_model, cnn_model)
-
+            rf_result, svm_result = predict_new_image(image, rf_model, svm_model)
             if rf_result is not None:
                 st.write('### Prediction Results:')
                 prediction_data = {
-                    'Algorithm': ['Random Forest', 'SVM', 'CNN'],
-                    'Prediction': [f'FIRE' if rf_result == 1 else 'non-fire',
-                                   f'FIRE' if svm_result == 1 else 'non-fire',
-                                   f'FIRE' if cnn_result == 1 else 'non-fire']
+                    'Algorithm': ['Random Forest', 'SVM'],
+                    'Prediction': ['FIRE' if rf_result == 1 else 'non-fire',
+                                   'FIRE' if svm_result == 1 else 'non-fire']
                 }
                 st.table(prediction_data)
-
                 contrast, dissimilarity, homogeneity, energy, correlation, asm = get_texture_features(image)
                 st.write('### Texture Features:')
                 texture_data = {
@@ -112,20 +95,16 @@ else:
         if ret:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             st.image(frame_rgb, caption='Captured Image', use_column_width=True)
-
             if st.button('Capture'):
-                rf_result, svm_result, cnn_result = predict_new_image(frame_rgb, rf_model, svm_model, cnn_model)
-
+                rf_result, svm_result = predict_new_image(frame_rgb, rf_model, svm_model)
                 if rf_result is not None:
                     st.write('### Prediction Results:')
                     prediction_data = {
-                        'Algorithm': ['Random Forest', 'SVM', 'CNN'],
-                        'Prediction': [f'FIRE' if rf_result == 1 else 'non-fire',
-                                       f'FIRE' if svm_result == 1 else 'non-fire',
-                                       f'FIRE' if cnn_result == 1 else 'non-fire']
+                        'Algorithm': ['Random Forest', 'SVM'],
+                        'Prediction': ['FIRE' if rf_result == 1 else 'non-fire',
+                                       'FIRE' if svm_result == 1 else 'non-fire']
                     }
                     st.table(prediction_data)
-
                     cv2.imwrite('captured_image.jpg', cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                     contrast, dissimilarity, homogeneity, energy, correlation, asm = get_texture_features(frame)
                     st.write('### Texture Features:')
