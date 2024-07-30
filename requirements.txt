@@ -4,3 +4,4 @@ streamlit
 opencv-python-headless
 keras
 scikit-image
+pickle
