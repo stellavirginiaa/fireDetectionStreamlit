@@ -3,7 +3,7 @@ import os
 import cv2
 import numpy as np
 import pickle
-from keras.models import load_model
+from tensorflow.keras.models import load_model  # Updated import
 from skimage.feature import graycomatrix, graycoprops
 import tempfile
 
@@ -60,6 +60,7 @@ cnn_model = load_model('cnn_model.h5')
 
 # Streamlit app
 st.title('Fire Detection App')
+
 # Narrative
 st.write("""
 ## Fire Detection Project
