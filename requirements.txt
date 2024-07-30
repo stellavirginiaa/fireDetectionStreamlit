@@ -1,12 +1,6 @@
-pip install tensorflow --use-pep517
-pip install tensorflow==2.13.0 numpy==1.24.0
-python -m pip install --upgrade pip
-
-
+tensorflow==2.13.0
+numpy==1.24.0
 streamlit
 opencv-python-headless
-numpy
 keras
 scikit-image
-tensorflow
-
